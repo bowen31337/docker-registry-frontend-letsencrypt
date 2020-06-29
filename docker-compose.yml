@@ -1,0 +1,37 @@
+version: '3'
+services:
+   docker-registry:
+     container_name: ${CONTAINER_REGISTRY_NAME}
+     image: registry:${REGISTRY_VERSION:-latest}
+     restart: unless-stopped
+     volumes:
+       - ${REGISTRY_FILES_PATH}:/var/lib/registry
+       - ${REGISTRY_AUTH_PATH}:/auth/
+     environment:
+       VIRTUAL_PORT: ${PORT_REGISTRY}
+       REGISTRY_AUTH: htpasswd
+       REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
+       REGISTRY_AUTH_HTPASSWD_PATH: ${REGISTRY_AUTH_HTPASSWD_PATH}
+       VIRTUAL_HOST: ${DOMAIN_REGISTRY}
+       LETSENCRYPT_HOST: ${DOMAIN_REGISTRY}
+       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+     logging:
+       options:
+         max-size: ${LOGGING_OPTIONS_MAX_SIZE:-200k}
+
+   registry-frontend:
+     container_name: registry_frontend
+     image: konradkleine/docker-registry-frontend:v2
+     depends_on:
+       - docker-registry
+     environment:
+       ENV_DOCKER_REGISTRY_HOST: ${CONTAINER_REGISTRY_NAME}
+       ENV_DOCKER_REGISTRY_PORT: ${PORT_REGISTRY}
+       VIRTUAL_HOST: ${DOMAIN_FRONTEND}
+       LETSENCRYPT_HOST: ${DOMAIN_FRONTEND}
+       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+
+networks:
+    default:
+       external:
+         name: ${NETWORK}
